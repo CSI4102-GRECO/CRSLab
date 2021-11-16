@@ -100,7 +100,8 @@ class StandardEvaluator(BaseEvaluator):
             for idx, task_report in enumerate(reports):
                 for each_metric, value in task_report.items():
                     self.writer.add_scalars(f'{self.reports_name[idx]}/{each_metric}', {mode: value.value()}, epoch)
-        logger.info('\n' + nice_report(aggregate_unnamed_reports(reports)))
+        if not file:
+            logger.info('\n' + nice_report(aggregate_unnamed_reports(reports)))
 
     def reset_metrics(self):
         # rec

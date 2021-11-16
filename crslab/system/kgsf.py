@@ -186,4 +186,86 @@ class KGSFSystem(BaseSystem):
         self.train_conversation()
 
     def interact(self):
-        pass
+        self.init_interact()
+        input_text = self.get_input("en")
+        while not self.finished:
+            #자연어로 된 input 처리해 tensor만듬
+            KGSF_input = self.process_input(input_text, 'conv')
+
+            #처리한 tensor 모델에 넣어 결과 받는다.
+            preds = self.model.forward(KGSF_input, 'conv', 'test').tolist()[0]
+
+            #모델이 출력한 결과 다시 자연어로 번역
+            p_str = ind2txt(preds, self.ind2tok, self.end_token_idx)
+
+            #여기서 시간 많이, 왜?
+            token_ids, entity_ids, movie_ids, word_ids = self.convert_to_id(p_str, 'conv')
+            
+            #차후 필요하면 수정 
+            self.update_context('conv', token_ids, entity_ids, movie_ids, word_ids)
+
+            print(f"[Response]:\n{p_str}")
+            input_text = self.get_input("en")
+
+    def init_interact(self):
+        self.finished = False
+        self.context = {
+            'rec': {},
+            'conv': {}
+        }
+        for key in self.context:
+            self.context[key]['context_tokens'] = []
+            self.context[key]['response'] = []
+            self.context[key]['context_entities'] = []
+            self.context[key]['context_words'] = []
+            self.context[key]['context_items'] = []
+            self.context[key]['items'] = []
+            self.context[key]['entity_set'] = set()
+            self.context[key]['word_set'] = set()
+
+    def process_input(self, input_text, stage):
+        token_ids, entity_ids, movie_ids, word_ids = self.convert_to_id(input_text, stage)
+        
+        self.update_context(stage, token_ids, entity_ids, movie_ids, word_ids)
+ 
+        data = {'role': 'Seeker', 'context_tokens': self.context[stage]['context_tokens'],
+                'response': self.context[stage]['response'],
+                'context_entities': self.context[stage]['context_entities'],
+                'context_words': self.context[stage]['context_words'],
+                'context_items': self.context[stage]['context_items'],
+                'items': self.context[stage]['context_items']}
+
+        dataloader = get_dataloader(self.opt, data, self.vocab) 
+
+        if stage == 'conv':
+            data = dataloader.conv_interact(data)
+
+        data = [ele.to(self.device) if isinstance(ele, torch.Tensor) else ele for ele in data]
+        return data
+
+    def convert_to_id(self, text, stage):
+        #token의 경우 text를 단어별로 분해한 것. ex: 'jack is having dinner' => ['jac','is','having','dinner']
+        tokens = self.tokenize(text, 'nltk')    
+        
+        #임시
+        """
+        if tokens[0] == '__start__':
+            del tokens[0]
+        """
+
+        #'i like the movie avengers' 입력하면 
+        #entities:['<http://dbpedia.org/resource/Z_movie>', '<http://dbpedia.org/resource/Masked_Avengers_(1981_film)>']
+        #words:['juliet', 'saintlike', 'buy_presents_for_others', 'movie', 'avengers']
+
+        #token의 길이에 비례해 link 함수에서 엄청난 시간이 걸린다. 왜?
+        entities = self.link(tokens, self.side_data['entity_kg']['entity'])
+        words = self.link(tokens, self.side_data['word_kg']['entity'])
+
+        token_ids = [self.vocab['tok2ind'].get(token, self.vocab['unk']) for token in tokens]
+        entity_ids = [self.vocab['entity2id'][entity] for entity in entities if
+                      entity in self.vocab['entity2id']]
+
+        movie_ids = [entity_id for entity_id in entity_ids if entity_id in self.item_ids]
+        word_ids = [self.vocab['word2id'][word] for word in words if word in self.vocab['word2id']]
+
+        return token_ids, entity_ids, movie_ids, word_ids

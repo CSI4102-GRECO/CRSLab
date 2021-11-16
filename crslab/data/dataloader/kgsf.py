@@ -127,3 +127,17 @@ class KGSFDataLoader(BaseDataLoader):
 
     def policy_batchify(self, *args, **kwargs):
         pass
+    
+    def conv_interact(self,data):
+        context_tokens = [truncate(merge_utt(data['context_tokens']), self.context_truncate, truncate_tail=False)]
+        context_entities = [truncate(data['context_entities'], self.entity_truncate, truncate_tail=False)]
+        context_words = [truncate(data['context_words'], self.word_truncate, truncate_tail=False)]
+        response = [add_start_end_token_idx(truncate(data['response'], self.response_truncate - 2),
+            start_token_idx=self.start_token_idx,
+            end_token_idx=self.end_token_idx)]
+
+        return (padded_tensor(context_tokens, self.pad_token_idx, pad_tail=False),
+                padded_tensor(context_entities, self.pad_entity_idx, pad_tail=False),
+                padded_tensor(context_words, self.pad_word_idx, pad_tail=False),
+                padded_tensor(response, self.pad_token_idx))
+

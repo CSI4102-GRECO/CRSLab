@@ -186,14 +186,15 @@ class KGSFSystem(BaseSystem):
 
         logger.info('[Recommendation Test]')
         with torch.no_grad():
-            self.evaluator.reset_metrics()
-            for batch in self.test_dataloader.get_rec_data(self.rec_batch_size, shuffle=False):
-                if self.rec_optim_opt.get('test_print_every_batch'):
+            if self.rec_optim_opt.get('test_print_every_batch'):
+                for batch in self.test_dataloader.get_rec_data(1, shuffle=False):
                     self.evaluator.reset_metrics()
-                self.step(batch, stage='rec', mode='test')
-                if self.rec_optim_opt.get('test_print_every_batch'):
+                    self.step(batch, stage='rec', mode='test')
                     self.evaluator.report(mode='test')
-            if not self.rec_optim_opt.get('test_print_every_batch'):
+            else:
+                self.evaluator.reset_metrics()
+                for batch in self.test_dataloader.get_rec_data(self.rec_batch_size, shuffle=False):
+                    self.step(batch, stage='rec', mode='test')
                 self.evaluator.report(mode='test')
 
     def test_conversation(self):
@@ -205,14 +206,15 @@ class KGSFSystem(BaseSystem):
 
         logger.info('[Conversation Test]')
         with torch.no_grad():
-            self.evaluator.reset_metrics()
-            for batch in self.test_dataloader.get_conv_data(batch_size=self.conv_batch_size, shuffle=False):
-                if self.conv_optim_opt.get('test_print_every_batch'):
+            if self.conv_optim_opt.get('test_print_every_batch'):
+                for batch in self.test_dataloader.get_conv_data(1, shuffle=False):
                     self.evaluator.reset_metrics()
-                self.step(batch, stage='conv', mode='test')
-                if self.conv_optim_opt.get('test_print_every_batch'):
+                    self.step(batch, stage='conv', mode='test')
                     self.evaluator.report(mode='test')
-            if not self.conv_optim_opt.get('test_print_every_batch'):
+            else:
+                self.evaluator.reset_metrics()
+                for batch in self.test_dataloader.get_conv_data(batch_size=self.conv_batch_size, shuffle=False):
+                    self.step(batch, stage='conv', mode='test')
                 self.evaluator.report(mode='test')
 
     def fit(self):

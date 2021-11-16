@@ -70,7 +70,6 @@ class BaseDataLoader(ABC):
                         file.write('"')
                         for sentence_in_index in conv_dict['context_tokens']:
                             sentence = " ".join([self.vocab['ind2tok'][index] for index in sentence_in_index])
-                            logger.info(sentence)
                             file.write(f'{sentence}\n')
                         file.write('"\t')
                     else:

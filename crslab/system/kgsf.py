@@ -56,7 +56,7 @@ class KGSFSystem(BaseSystem):
         self.rec_batch_size = self.rec_optim_opt['batch_size']
         self.conv_batch_size = self.conv_optim_opt['batch_size']
 
-        self.cpath = os.path.join(CSV_PATH, "kgsf", opt['dataset'])
+        self.csv_path = os.path.join(CSV_PATH, "kgsf", opt['dataset'])
 
     def rec_evaluate(self, rec_predict, item_label):
         rec_predict = rec_predict.cpu()
@@ -74,13 +74,11 @@ class KGSFSystem(BaseSystem):
         for p, r in zip(prediction, response):
             p_str = ind2txt(p, self.ind2tok, self.end_token_idx)
             r_str = ind2txt(r, self.ind2tok, self.end_token_idx)
-            if self.conv_optim_opt.get('test_print_every_batch'):
-                logger.info(f'\n   prediction: {p_str}\n   response: {r_str}')
-            self.evaluator.gen_evaluate(p_str, [r_str])
-
             if file:
                 file.write(f'{p_str}\t{r_str}\t')
-                logger.info(f'Write prediction and response into csv')
+            elif self.conv_optim_opt.get('test_print_every_batch'):
+                logger.info(f'\n   prediction: {p_str}\n   response: {r_str}')
+            self.evaluator.gen_evaluate(p_str, [r_str])
 
     def step(self, batch, stage, mode, file=None):
         batch = [ele.to(self.device) for ele in batch]
@@ -193,10 +191,9 @@ class KGSFSystem(BaseSystem):
         self.init_optim(self.rec_optim_opt, self.model.parameters())
 
         logger.info('[Recommendation Test]')
-        # f = None
-        f = open(os.path.join(self.cpath, 'rec.csv'), 'w', encoding='utf-8', newline='')
+        f = open(os.path.join(self.csv_path, 'rec.csv'), 'w', encoding='utf-8', newline='')
         f.write('sentences\thit@1\tndcg@1\tmrr@1\thit@10\tndcg@10\tmrr@10\thit@50\tndcg@50\tmrr@50\n')
-        logger.info(f"[Write {os.path.join(self.cpath, 'rec.csv')}]")
+        logger.info(f"[Write {os.path.join(self.csv_path, 'rec.csv')}]")
         with torch.no_grad():
             if self.rec_optim_opt.get('test_print_every_batch'):
                 for batch in self.test_dataloader.get_rec_data(1, shuffle=False, file=f):
@@ -219,10 +216,9 @@ class KGSFSystem(BaseSystem):
         self.init_optim(self.conv_optim_opt, self.model.parameters())
 
         logger.info('[Conversation Test]')
-        # f = None
-        f = open(os.path.join(self.cpath, 'conv.csv'), 'w', encoding='utf-8', newline='')
+        f = open(os.path.join(self.csv_path, 'conv.csv'), 'w', encoding='utf-8', newline='')
         f.write('sentences\tprediction\tresponse\tf1\tbleu@1\tbleu@2\tbleu@3\tbleu@4\tgreedy\taverage\textreme\tdist@1\tdist@2\tdist@3\tdist@4\n')
-        logger.info(f"[Write {os.path.join(self.cpath, 'conv.csv')}]")
+        logger.info(f"[Write {os.path.join(self.csv_path, 'conv.csv')}]")
         with torch.no_grad():
             if self.conv_optim_opt.get('test_print_every_batch'):
                 for batch in self.test_dataloader.get_conv_data(1, shuffle=False, file=f):

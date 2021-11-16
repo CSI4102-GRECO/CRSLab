@@ -74,7 +74,8 @@ class KGSFSystem(BaseSystem):
         for p, r in zip(prediction, response):
             p_str = ind2txt(p, self.ind2tok, self.end_token_idx)
             r_str = ind2txt(r, self.ind2tok, self.end_token_idx)
-            logger.info(f'\n   prediction: {p_str}\n   response: {r_str}')
+            if self.conv_optim_opt.get('test_print_every_batch'):
+                logger.info(f'\n   prediction: {p_str}\n   response: {r_str}')
             self.evaluator.gen_evaluate(p_str, [r_str])
 
             if file:

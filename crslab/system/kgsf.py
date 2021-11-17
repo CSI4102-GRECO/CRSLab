@@ -193,7 +193,8 @@ class KGSFSystem(BaseSystem):
             if self.rec_optim_opt.get('test_print_every_batch'):
                 rec_test_result_file_name = 'rec.csv'
                 f = open(os.path.join(self.csv_path, rec_test_result_file_name), 'w', encoding='utf-8', newline='')
-                f.write('sentences\tentities\thit@1\tndcg@1\tmrr@1\thit@10\tndcg@10\tmrr@10\thit@50\tndcg@50\tmrr@50\n')
+                f.write('input context\tentities\thit@1\tndcg@1\tmrr@1\t'
+                        'hit@10\tndcg@10\tmrr@10\thit@50\tndcg@50\tmrr@50\n')
                 logger.info(f"[Write {os.path.join(self.csv_path, rec_test_result_file_name)}]")
 
                 for batch in self.test_dataloader.get_rec_data(1, shuffle=False, file=f):
@@ -220,8 +221,8 @@ class KGSFSystem(BaseSystem):
             if self.conv_optim_opt.get('test_print_every_batch'):
                 conv_test_result_file_name = 'rec.csv'
                 f = open(os.path.join(self.csv_path, conv_test_result_file_name), 'w', encoding='utf-8', newline='')
-                f.write('sentences\tentities\tprediction\tresponse\tf1\tbleu@1\tbleu@2\tbleu@3\tbleu@4\tgreedy\taverage'
-                        '\textreme\tdist@1\tdist@2\tdist@3\tdist@4\n')
+                f.write('input context\tentities\tprediction\tresponse\tf1\tbleu@1\tbleu@2\tbleu@3\tbleu@4\tgreedy\t'
+                        'average\textreme\tdist@1\tdist@2\tdist@3\tdist@4\n')
                 logger.info(f"[Write {os.path.join(self.csv_path, conv_test_result_file_name)}]")
 
                 for batch in self.test_dataloader.get_conv_data(1, shuffle=False, file=f):

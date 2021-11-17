@@ -44,6 +44,7 @@ class BaseDataLoader(ABC):
             batch_size (int):
             shuffle (bool, optional): Defaults to True.
             process_fn (func, optional): function to process dataset before batchify. Defaults to None.
+            file (file descriptor, optional): file descriptor where to print input data for each batch.
 
         Yields:
             tuple or dict of torch.Tensor: batch data for system to fit
@@ -64,18 +65,17 @@ class BaseDataLoader(ABC):
         for start_idx in tqdm(range(batch_num)):
             batch_idx = idx_list[start_idx * batch_size: (start_idx + 1) * batch_size]
             batch = [dataset[idx] for idx in batch_idx]
-            if (batch_fn == self.rec_batchify and self.opt['rec'].get('test_print_every_batch')) or (batch_fn == self.conv_batchify and self.opt['conv'].get('test_print_every_batch')):
+
+            if file:
                 for conv_dict in batch:
-                    if file:
-                        file.write('"')
-                        for sentence_in_index in conv_dict['context_tokens']:
-                            sentence = " ".join([self.vocab['ind2tok'][index] for index in sentence_in_index])
-                            file.write(f'{sentence}\n')
-                        file.write('"\t')
-                    else:
-                        for sentence_in_index in conv_dict['context_tokens']:
-                            sentence = " ".join([self.vocab['ind2tok'][index] for index in sentence_in_index])
-                            logger.info(sentence)
+                    file.write('"')
+
+                    for sentence_in_index in conv_dict['context_tokens']:
+                        sentence = " ".join([self.vocab['ind2tok'][index] for index in sentence_in_index])
+                        file.write(f'{sentence}\n')
+
+                    file.write('"\t')
+
             yield batch_fn(batch)
 
     def get_conv_data(self, batch_size, shuffle=True, file=None):

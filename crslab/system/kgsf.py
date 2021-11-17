@@ -76,8 +76,6 @@ class KGSFSystem(BaseSystem):
             r_str = ind2txt(r, self.ind2tok, self.end_token_idx)
             if file:
                 file.write(f'{p_str}\t{r_str}\t')
-            elif self.conv_optim_opt.get('test_print_every_batch'):
-                logger.info(f'\n   prediction: {p_str}\n   response: {r_str}')
             self.evaluator.gen_evaluate(p_str, [r_str])
 
     def step(self, batch, stage, mode, file=None):

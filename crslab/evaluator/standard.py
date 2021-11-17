@@ -91,16 +91,18 @@ class StandardEvaluator(BaseEvaluator):
         for k, v in self.dist_set.items():
             self.gen_metrics.add(k, AverageMetric(len(v) / self.dist_cnt))
         reports = [self.rec_metrics.report(), self.gen_metrics.report(), self.optim_metrics.report()]
+
+        if self.tensorboard and mode != 'test':
+            for idx, task_report in enumerate(reports):
+                for each_metric, value in task_report.items():
+                    self.writer.add_scalars(f'{self.reports_name[idx]}/{each_metric}', {mode: value.value()}, epoch)
+
         if file:
             for each_metric, value in self.rec_metrics.report().items():
                 file.write(f'{str(value.value())}\t')
             for each_metric, value in self.gen_metrics.report().items():
                 file.write(f'{str(value.value())}\t')
-        if self.tensorboard and mode != 'test':
-            for idx, task_report in enumerate(reports):
-                for each_metric, value in task_report.items():
-                    self.writer.add_scalars(f'{self.reports_name[idx]}/{each_metric}', {mode: value.value()}, epoch)
-        if not file:
+        else:
             logger.info('\n' + nice_report(aggregate_unnamed_reports(reports)))
 
     def reset_metrics(self):

@@ -70,7 +70,9 @@ class BaseDataLoader(ABC):
                 for conv_dict in batch:
                     file.write('"')
                     for sentence_in_index in conv_dict['context_tokens']:
-                        sentence = " ".join([self.vocab['ind2tok'][index] for index in sentence_in_index])
+                        sentence = f'{conv_dict["role"]}: ' + " ".join(
+                            [self.vocab['ind2tok'][index] for index in sentence_in_index]
+                        )
                         file.write(f'{sentence}\n')
                     file.write('"\t')
 

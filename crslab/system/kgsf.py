@@ -192,14 +192,7 @@ class KGSFSystem(BaseSystem):
         with torch.no_grad():
             if self.rec_optim_opt.get('test_print_every_batch'):
                 rec_test_result_file_name = os.path.join(self.csv_path, 'rec.csv')
-                if not os.path.exists(os.path.dirname(rec_test_result_file_name)):
-                    try:
-                        os.makedirs(os.path.dirname(rec_test_result_file_name))
-                    except OSError as exc:  # Guard against race condition
-                        import errno
-                        if exc.errno != errno.EEXIST:
-                            raise
-
+                os.makedirs(os.path.dirname(rec_test_result_file_name), exist_ok=True)
                 with open(rec_test_result_file_name, 'w', encoding='utf-8', newline='') as f:
                     f.write('input context\tentities\thit@1\tndcg@1\tmrr@1\t'
                             'hit@10\tndcg@10\tmrr@10\thit@50\tndcg@50\tmrr@50\n')
@@ -228,14 +221,7 @@ class KGSFSystem(BaseSystem):
         with torch.no_grad():
             if self.conv_optim_opt.get('test_print_every_batch'):
                 conv_test_result_file_name = os.path.join(self.csv_path, 'conv.csv')
-                if not os.path.exists(os.path.dirname(conv_test_result_file_name)):
-                    try:
-                        os.makedirs(os.path.dirname(conv_test_result_file_name))
-                    except OSError as exc:  # Guard against race condition
-                        import errno
-                        if exc.errno != errno.EEXIST:
-                            raise
-
+                os.makedirs(os.path.dirname(conv_test_result_file_name), exist_ok=True)
                 with open(conv_test_result_file_name, 'w', encoding='utf-8', newline='') as f:
                     f.write('input context\tentities\tprediction\tresponse\tf1\tbleu@1\tbleu@2\tbleu@3\tbleu@4\t'
                             'greedy\taverage\textreme\tdist@1\tdist@2\tdist@3\tdist@4\n')

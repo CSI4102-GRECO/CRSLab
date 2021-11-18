@@ -191,18 +191,26 @@ class KGSFSystem(BaseSystem):
         logger.info('[Recommendation Test]')
         with torch.no_grad():
             if self.rec_optim_opt.get('test_print_every_batch'):
-                rec_test_result_file_name = 'rec.csv'
-                f = open(os.path.join(self.csv_path, rec_test_result_file_name), 'w', encoding='utf-8', newline='')
-                f.write('input context\tentities\thit@1\tndcg@1\tmrr@1\t'
-                        'hit@10\tndcg@10\tmrr@10\thit@50\tndcg@50\tmrr@50\n')
-                logger.info(f"[Write {os.path.join(self.csv_path, rec_test_result_file_name)}]")
+                rec_test_result_file_name = os.path.join(self.csv_path, 'rec.csv')
+                if not os.path.exists(os.path.dirname(rec_test_result_file_name)):
+                    try:
+                        os.makedirs(os.path.dirname(rec_test_result_file_name))
+                    except OSError as exc:  # Guard against race condition
+                        import errno
+                        if exc.errno != errno.EEXIST:
+                            raise
 
-                for batch in self.test_dataloader.get_rec_data(1, shuffle=False, file=f):
-                    self.evaluator.reset_metrics()
-                    self.step(batch, stage='rec', mode='test')
-                    self.evaluator.report(mode='test', file=f)
-                    f.write('\n')
-                f.close()
+                with open(rec_test_result_file_name, 'w', encoding='utf-8', newline='') as f:
+                    f.write('input context\tentities\thit@1\tndcg@1\tmrr@1\t'
+                            'hit@10\tndcg@10\tmrr@10\thit@50\tndcg@50\tmrr@50\n')
+                    logger.info(f"[Write {rec_test_result_file_name}]")
+
+                    for batch in self.test_dataloader.get_rec_data(1, shuffle=False, file=f):
+                        self.evaluator.reset_metrics()
+                        self.step(batch, stage='rec', mode='test')
+                        self.evaluator.report(mode='test', file=f)
+                        f.write('\n')
+                    f.close()
             else:
                 self.evaluator.reset_metrics()
                 for batch in self.test_dataloader.get_rec_data(self.rec_batch_size, shuffle=False):
@@ -219,18 +227,26 @@ class KGSFSystem(BaseSystem):
         logger.info('[Conversation Test]')
         with torch.no_grad():
             if self.conv_optim_opt.get('test_print_every_batch'):
-                conv_test_result_file_name = 'rec.csv'
-                f = open(os.path.join(self.csv_path, conv_test_result_file_name), 'w', encoding='utf-8', newline='')
-                f.write('input context\tentities\tprediction\tresponse\tf1\tbleu@1\tbleu@2\tbleu@3\tbleu@4\tgreedy\t'
-                        'average\textreme\tdist@1\tdist@2\tdist@3\tdist@4\n')
-                logger.info(f"[Write {os.path.join(self.csv_path, conv_test_result_file_name)}]")
+                conv_test_result_file_name = os.path.join(self.csv_path, 'conv.csv')
+                if not os.path.exists(os.path.dirname(conv_test_result_file_name)):
+                    try:
+                        os.makedirs(os.path.dirname(conv_test_result_file_name))
+                    except OSError as exc:  # Guard against race condition
+                        import errno
+                        if exc.errno != errno.EEXIST:
+                            raise
 
-                for batch in self.test_dataloader.get_conv_data(1, shuffle=False, file=f):
-                    self.evaluator.reset_metrics()
-                    self.step(batch, stage='conv', mode='test', file=f)
-                    self.evaluator.report(mode='test', file=f)
-                    f.write('\n')
-                f.close()
+                with open(conv_test_result_file_name, 'w', encoding='utf-8', newline='') as f:
+                    f.write('input context\tentities\tprediction\tresponse\tf1\tbleu@1\tbleu@2\tbleu@3\tbleu@4\t'
+                            'greedy\taverage\textreme\tdist@1\tdist@2\tdist@3\tdist@4\n')
+                    logger.info(f"[Write {conv_test_result_file_name}]")
+
+                    for batch in self.test_dataloader.get_conv_data(1, shuffle=False, file=f):
+                        self.evaluator.reset_metrics()
+                        self.step(batch, stage='conv', mode='test', file=f)
+                        self.evaluator.report(mode='test', file=f)
+                        f.write('\n')
+                    f.close()
             else:
                 self.evaluator.reset_metrics()
                 for batch in self.test_dataloader.get_conv_data(batch_size=self.conv_batch_size, shuffle=False):

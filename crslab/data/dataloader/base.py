@@ -80,6 +80,12 @@ class BaseDataLoader(ABC):
                     )
                     file.write(f'{entities}"\t')
 
+                    file.write('"')
+                    words = "\n".join(
+                        [self.vocab['id2word'][word_index] for word_index in conv_dict['context_words']]
+                    )
+                    file.write(f'{words}"\t')
+
             yield batch_fn(batch)
 
     def get_conv_data(self, batch_size, shuffle=True, file=None):

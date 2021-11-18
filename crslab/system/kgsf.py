@@ -194,7 +194,7 @@ class KGSFSystem(BaseSystem):
                 rec_test_result_file_name = os.path.join(self.csv_path, 'rec.csv')
                 os.makedirs(os.path.dirname(rec_test_result_file_name), exist_ok=True)
                 with open(rec_test_result_file_name, 'w', encoding='utf-8', newline='') as f:
-                    f.write('input context\tentities\thit@1\tndcg@1\tmrr@1\t'
+                    f.write('input context\tentities\twords\thit@1\tndcg@1\tmrr@1\t'
                             'hit@10\tndcg@10\tmrr@10\thit@50\tndcg@50\tmrr@50\n')
                     logger.info(f"[Write {rec_test_result_file_name}]")
 
@@ -223,7 +223,7 @@ class KGSFSystem(BaseSystem):
                 conv_test_result_file_name = os.path.join(self.csv_path, 'conv.csv')
                 os.makedirs(os.path.dirname(conv_test_result_file_name), exist_ok=True)
                 with open(conv_test_result_file_name, 'w', encoding='utf-8', newline='') as f:
-                    f.write('input context\tentities\tprediction\tresponse\tf1\tbleu@1\tbleu@2\tbleu@3\tbleu@4\t'
+                    f.write('input context\tentities\twords\tprediction\tresponse\tf1\tbleu@1\tbleu@2\tbleu@3\tbleu@4\t'
                             'greedy\taverage\textreme\tdist@1\tdist@2\tdist@3\tdist@4\n')
                     logger.info(f"[Write {conv_test_result_file_name}]")
 

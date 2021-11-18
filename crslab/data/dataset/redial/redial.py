@@ -83,6 +83,7 @@ class ReDialDataset(BaseDataset):
             'entity2id': self.entity2id,
             'id2entity': self.id2entity,
             'word2id': self.word2id,
+            'id2word': self.id2word,
             'vocab_size': len(self.tok2ind),
             'n_entity': self.n_entity,
             'n_word': self.n_word,
@@ -127,6 +128,7 @@ class ReDialDataset(BaseDataset):
         # conceptNet
         # {concept: concept_id}
         self.word2id = json.load(open(os.path.join(self.dpath, 'concept2id.json'), 'r', encoding='utf-8'))
+        self.id2word = {idx: word for word, idx in self.word2id.items()}
         self.n_word = max(self.word2id.values()) + 1
         # {relation\t concept \t concept}
         self.word_kg = open(os.path.join(self.dpath, 'conceptnet_subkg.txt'), 'r', encoding='utf-8')

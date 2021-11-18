@@ -23,7 +23,7 @@ class BaseDataLoader(ABC):
 
     """
 
-    def __init__(self, opt, dataset):
+    def __init__(self, opt, dataset, vocab=None):
         """
         Args:
             opt (Config or dict): config for dataloader or the whole system.
@@ -32,10 +32,11 @@ class BaseDataLoader(ABC):
         """
         self.opt = opt
         self.dataset = dataset
+        self.vocab = vocab
         self.scale = opt.get('scale', 1)
         assert 0 < self.scale <= 1
 
-    def get_data(self, batch_fn, batch_size, shuffle=True, process_fn=None):
+    def get_data(self, batch_fn, batch_size, shuffle=True, process_fn=None, file=None):
         """Collate batch data for system to fit
 
         Args:
@@ -43,6 +44,7 @@ class BaseDataLoader(ABC):
             batch_size (int):
             shuffle (bool, optional): Defaults to True.
             process_fn (func, optional): function to process dataset before batchify. Defaults to None.
+            file (file descriptor, optional): file descriptor where to print input data for each batch.
 
         Yields:
             tuple or dict of torch.Tensor: batch data for system to fit
@@ -63,9 +65,30 @@ class BaseDataLoader(ABC):
         for start_idx in tqdm(range(batch_num)):
             batch_idx = idx_list[start_idx * batch_size: (start_idx + 1) * batch_size]
             batch = [dataset[idx] for idx in batch_idx]
+
+            if file:
+                for conv_dict in batch:
+                    file.write('"')
+                    for sentence_in_index in conv_dict['context_tokens']:
+                        sentence = " ".join([self.vocab['ind2tok'][index] for index in sentence_in_index])
+                        file.write(f'{sentence}\n')
+                    file.write('"\t')
+
+                    file.write('"')
+                    entities = "\n".join(
+                        [self.vocab['id2entity'][entity_index] for entity_index in conv_dict['context_entities']]
+                    )
+                    file.write(f'{entities}"\t')
+
+                    file.write('"')
+                    words = "\n".join(
+                        [self.vocab['id2word'][word_index] for word_index in conv_dict['context_words']]
+                    )
+                    file.write(f'{words}"\t')
+
             yield batch_fn(batch)
 
-    def get_conv_data(self, batch_size, shuffle=True):
+    def get_conv_data(self, batch_size, shuffle=True, file=None):
         """get_data wrapper for conversation.
 
         You can implement your own process_fn in ``conv_process_fn``, batch_fn in ``conv_batchify``.
@@ -78,9 +101,9 @@ class BaseDataLoader(ABC):
             tuple or dict of torch.Tensor: batch data for conversation.
 
         """
-        return self.get_data(self.conv_batchify, batch_size, shuffle, self.conv_process_fn)
+        return self.get_data(self.conv_batchify, batch_size, shuffle, self.conv_process_fn, file)
 
-    def get_rec_data(self, batch_size, shuffle=True):
+    def get_rec_data(self, batch_size, shuffle=True, file=None):
         """get_data wrapper for recommendation.
 
         You can implement your own process_fn in ``rec_process_fn``, batch_fn in ``rec_batchify``.
@@ -93,7 +116,7 @@ class BaseDataLoader(ABC):
             tuple or dict of torch.Tensor: batch data for recommendation.
 
         """
-        return self.get_data(self.rec_batchify, batch_size, shuffle, self.rec_process_fn)
+        return self.get_data(self.rec_batchify, batch_size, shuffle, self.rec_process_fn, file)
 
     def get_policy_data(self, batch_size, shuffle=True):
         """get_data wrapper for policy.

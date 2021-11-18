@@ -12,6 +12,7 @@ import os
 import torch
 from loguru import logger
 
+from crslab.config import CSV_PATH
 from crslab.evaluator.metrics.base import AverageMetric
 from crslab.evaluator.metrics.gen import PPLMetric
 from crslab.system.base import BaseSystem
@@ -55,6 +56,8 @@ class KGSFSystem(BaseSystem):
         self.rec_batch_size = self.rec_optim_opt['batch_size']
         self.conv_batch_size = self.conv_optim_opt['batch_size']
 
+        self.csv_path = os.path.join(CSV_PATH, "kgsf", opt['dataset'])
+
     def rec_evaluate(self, rec_predict, item_label):
         rec_predict = rec_predict.cpu()
         rec_predict = rec_predict[:, self.item_ids]
@@ -65,15 +68,17 @@ class KGSFSystem(BaseSystem):
             item = self.item_ids.index(item)
             self.evaluator.rec_evaluate(rec_rank, item)
 
-    def conv_evaluate(self, prediction, response):
+    def conv_evaluate(self, prediction, response, file=None):
         prediction = prediction.tolist()
         response = response.tolist()
         for p, r in zip(prediction, response):
             p_str = ind2txt(p, self.ind2tok, self.end_token_idx)
             r_str = ind2txt(r, self.ind2tok, self.end_token_idx)
+            if file:
+                file.write(f'{p_str}\t{r_str}\t')
             self.evaluator.gen_evaluate(p_str, [r_str])
 
-    def step(self, batch, stage, mode):
+    def step(self, batch, stage, mode, file=None):
         batch = [ele.to(self.device) for ele in batch]
         if stage == 'pretrain':
             info_loss = self.model.forward(batch, stage, mode)
@@ -108,7 +113,7 @@ class KGSFSystem(BaseSystem):
                 self.evaluator.gen_metrics.add("ppl", PPLMetric(gen_loss))
             else:
                 pred = self.model.forward(batch, stage, mode)
-                self.conv_evaluate(pred, batch[-1])
+                self.conv_evaluate(pred, batch[-1], file)
         else:
             raise
 
@@ -180,10 +185,68 @@ class KGSFSystem(BaseSystem):
                 self.step(batch, stage='conv', mode='test')
             self.evaluator.report(mode='test')
 
+    def test_recommendation(self):
+        self.init_optim(self.rec_optim_opt, self.model.parameters())
+
+        logger.info('[Recommendation Test]')
+        with torch.no_grad():
+            if self.rec_optim_opt.get('test_print_every_batch'):
+                rec_test_result_file_name = os.path.join(self.csv_path, 'rec.csv')
+                os.makedirs(os.path.dirname(rec_test_result_file_name), exist_ok=True)
+                with open(rec_test_result_file_name, 'w', encoding='utf-8', newline='') as f:
+                    f.write('input context\tentities\twords\thit@1\tndcg@1\tmrr@1\t'
+                            'hit@10\tndcg@10\tmrr@10\thit@50\tndcg@50\tmrr@50\n')
+                    logger.info(f"[Write {rec_test_result_file_name}]")
+
+                    for batch in self.test_dataloader.get_rec_data(1, shuffle=False, file=f):
+                        self.evaluator.reset_metrics()
+                        self.step(batch, stage='rec', mode='test')
+                        self.evaluator.report(mode='test', file=f)
+                        f.write('\n')
+                    f.close()
+            else:
+                self.evaluator.reset_metrics()
+                for batch in self.test_dataloader.get_rec_data(self.rec_batch_size, shuffle=False):
+                    self.step(batch, stage='rec', mode='test')
+                self.evaluator.report(mode='test')
+
+    def test_conversation(self):
+        if os.environ["CUDA_VISIBLE_DEVICES"] == '-1':
+            self.model.freeze_parameters()
+        else:
+            self.model.module.freeze_parameters()
+        self.init_optim(self.conv_optim_opt, self.model.parameters())
+
+        logger.info('[Conversation Test]')
+        with torch.no_grad():
+            if self.conv_optim_opt.get('test_print_every_batch'):
+                conv_test_result_file_name = os.path.join(self.csv_path, 'conv.csv')
+                os.makedirs(os.path.dirname(conv_test_result_file_name), exist_ok=True)
+                with open(conv_test_result_file_name, 'w', encoding='utf-8', newline='') as f:
+                    f.write('input context\tentities\twords\tprediction\tresponse\tf1\tbleu@1\tbleu@2\tbleu@3\tbleu@4\t'
+                            'greedy\taverage\textreme\tdist@1\tdist@2\tdist@3\tdist@4\n')
+                    logger.info(f"[Write {conv_test_result_file_name}]")
+
+                    for batch in self.test_dataloader.get_conv_data(1, shuffle=False, file=f):
+                        self.evaluator.reset_metrics()
+                        self.step(batch, stage='conv', mode='test', file=f)
+                        self.evaluator.report(mode='test', file=f)
+                        f.write('\n')
+                    f.close()
+            else:
+                self.evaluator.reset_metrics()
+                for batch in self.test_dataloader.get_conv_data(batch_size=self.conv_batch_size, shuffle=False):
+                    self.step(batch, stage='conv', mode='test')
+                self.evaluator.report(mode='test')
+
     def fit(self):
         self.pretrain()
         self.train_recommender()
         self.train_conversation()
+
+    def test(self):
+        self.test_recommendation()
+        self.test_conversation()
 
     def interact(self):
         pass

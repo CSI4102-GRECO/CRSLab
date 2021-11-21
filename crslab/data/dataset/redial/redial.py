@@ -185,6 +185,12 @@ class ReDialDataset(BaseDataset):
         entity_set, word_set = set(), set()
         for i, conv in enumerate(raw_conv_dict):
             text_tokens, entities, movies, words = conv["text"], conv["entity"], conv["movie"], conv["word"]
+
+            if conv['role'] == 'Seeker':
+                text_tokens.insert(0,23096)
+            else:
+                text_tokens.insert(0,23097)
+
             if len(context_tokens) > 0:
                 conv_dict = {
                     "role": conv['role'],

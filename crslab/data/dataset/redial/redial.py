@@ -113,10 +113,8 @@ class ReDialDataset(BaseDataset):
         last_index = len(self.tok2ind)
         self.role_seeker_token_idx = last_index
         self.role_recommender_token_idx = last_index + 1
-        self.tok2ind.update({
-            "__Seeker__": self.role_seeker_token_idx,
-            "__Recommender__": self.role_recommender_token_idx,
-        })
+        self.tok2ind["__Seeker__"] = self.role_seeker_token_idx
+        self.tok2ind["__Recommender__"] = self.role_recommender_token_idx
 
         self.ind2tok = {idx: word for word, idx in self.tok2ind.items()}
 

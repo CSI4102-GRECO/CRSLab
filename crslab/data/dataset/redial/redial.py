@@ -108,6 +108,16 @@ class ReDialDataset(BaseDataset):
 
     def _load_vocab(self):
         self.tok2ind = json.load(open(os.path.join(self.dpath, 'token2id.json'), 'r', encoding='utf-8'))
+
+        # Add role tokens
+        last_index = len(self.tok2ind)
+        self.role_seeker_token_idx = last_index
+        self.role_recommender_token_idx = last_index + 1
+        self.tok2ind.update({
+            "__Seeker__": self.role_seeker_token_idx,
+            "__Recommender__": self.role_recommender_token_idx,
+        })
+
         self.ind2tok = {idx: word for word, idx in self.tok2ind.items()}
 
         logger.debug(f"[Load vocab from {os.path.join(self.dpath, 'token2id.json')}]")
@@ -187,9 +197,9 @@ class ReDialDataset(BaseDataset):
             text_tokens, entities, movies, words = conv["text"], conv["entity"], conv["movie"], conv["word"]
 
             if conv['role'] == 'Seeker':
-                text_tokens.insert(0,23096)
+                text_tokens.insert(0, self.role_seeker_token_idx)
             else:
-                text_tokens.insert(0,23097)
+                text_tokens.insert(0, self.role_recommender_token_idx)
 
             if len(context_tokens) > 0:
                 conv_dict = {
